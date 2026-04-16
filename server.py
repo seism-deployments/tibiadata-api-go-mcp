@@ -13,49 +13,37 @@ BASE_URL = "https://api.tibiadata.com/v4"
 
 
 @mcp.tool()
-async def get_character(character_name: str) -> dict:
-    """Retrieve detailed information about a specific Tibia character by name, including their level, vocation, world, guild membership, achievements, and other profile data. Use this when the user asks about a specific player or character in Tibia."""
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{BASE_URL}/character/{character_name}",
-            timeout=30.0
-        )
+async def get_character(name: str) -> dict:
+    """Retrieve detailed information about a specific Tibia character, including their level, vocation, guild, achievements, and other profile data. Use this when the user asks about a Tibia player or character."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(f"{BASE_URL}/character/{name}")
         response.raise_for_status()
         return response.json()
 
 
 @mcp.tool()
-async def get_world(world_name: str) -> dict:
-    """Retrieve information about a specific Tibia game world, including online player count, world type (PvP/non-PvP), location, and other world details. Use this when the user asks about a particular Tibia game server or world."""
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{BASE_URL}/world/{world_name}",
-            timeout=30.0
-        )
+async def get_guild(name: str) -> dict:
+    """Retrieve information about a specific Tibia guild, including its members, description, founding date, and war history. Use this when the user asks about a Tibia guild."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(f"{BASE_URL}/guild/{name}")
+        response.raise_for_status()
+        return response.json()
+
+
+@mcp.tool()
+async def get_world(name: str) -> dict:
+    """Retrieve information about a specific Tibia game world/server, including online players, location, PvP type, and status. Use this when the user asks about a specific Tibia server or world."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(f"{BASE_URL}/world/{name}")
         response.raise_for_status()
         return response.json()
 
 
 @mcp.tool()
 async def list_worlds() -> dict:
-    """Retrieve a list of all available Tibia game worlds, including their status, player counts, and world types. Use this when the user wants to see all game servers or compare worlds."""
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{BASE_URL}/worlds",
-            timeout=30.0
-        )
-        response.raise_for_status()
-        return response.json()
-
-
-@mcp.tool()
-async def get_guild(guild_name: str) -> dict:
-    """Retrieve detailed information about a specific Tibia guild, including its members, ranks, description, and founding date. Use this when the user asks about a guild or organization in Tibia."""
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{BASE_URL}/guild/{guild_name}",
-            timeout=30.0
-        )
+    """Retrieve a list of all Tibia game worlds/servers with their basic status information. Use this when the user wants to see all available Tibia servers or compare worlds."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(f"{BASE_URL}/worlds")
         response.raise_for_status()
         return response.json()
 
@@ -67,74 +55,51 @@ async def get_highscores(
     vocation: Optional[str] = "all",
     page: Optional[int] = 1
 ) -> dict:
-    """Retrieve highscore rankings for a specific Tibia world and category such as experience, magic level, skills, achievements, or other leaderboards. Use this when the user wants to see top-ranked players.
-
-    Args:
-        world: The Tibia world name to get highscores for, or 'all' for global rankings
-        category: The highscore category (e.g., 'experience', 'magiclevel', 'fist', 'club', 'sword', 'axe', 'distance', 'shielding', 'fishing', 'achievements', 'loyalty')
-        vocation: Filter by vocation: 'all', 'knight', 'paladin', 'sorcerer', 'druid', or 'none' (rookgaard)
-        page: Page number for paginated results (each page contains 50 entries)
-    """
-    voc = vocation if vocation else "all"
-    pg = page if page else 1
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{BASE_URL}/highscores/{world}/{category}/{voc}/{pg}",
-            timeout=30.0
-        )
+    """Retrieve the highscore rankings for a specific Tibia world and category (e.g., experience, magic level, fishing). Use this when the user wants to see top-ranked players on a world or in a skill."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        url = f"{BASE_URL}/highscores/{world}/{category}/{vocation}/{page}"
+        response = await client.get(url)
         response.raise_for_status()
         return response.json()
 
 
 @mcp.tool()
-async def get_news(
-    news_id: Optional[int] = None,
-    days: Optional[int] = 90
-) -> dict:
-    """Retrieve the latest Tibia news articles, tickers, or news archive entries from the official Tibia website. Use this when the user wants to know about recent Tibia game updates, events, or announcements.
+async def get_creature(race: str) -> dict:
+    """Retrieve detailed information about a specific Tibia creature/monster, including its loot, hit points, experience, and other stats. Use this when the user asks about a Tibia monster or creature."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(f"{BASE_URL}/creature/{race}")
+        response.raise_for_status()
+        return response.json()
 
-    Args:
-        news_id: Specific news article ID to retrieve. If omitted, returns a list of recent news.
-        days: Number of past days to include in the news archive list (used when news_id is not specified)
-    """
-    async with httpx.AsyncClient() as client:
-        if news_id is not None:
-            response = await client.get(
-                f"{BASE_URL}/news/id/{news_id}",
-                timeout=30.0
-            )
+
+@mcp.tool()
+async def get_spells(vocation: Optional[str] = "all") -> dict:
+    """Retrieve information about Tibia spells, optionally filtered by vocation. Use this when the user asks about Tibia spells or magic abilities available to characters."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        if vocation and vocation != "all":
+            url = f"{BASE_URL}/spells/{vocation}"
         else:
-            d = days if days else 90
-            response = await client.get(
-                f"{BASE_URL}/news/archive/{d}",
-                timeout=30.0
-            )
+            url = f"{BASE_URL}/spells"
+        response = await client.get(url)
         response.raise_for_status()
         return response.json()
 
 
 @mcp.tool()
-async def get_creature(creature_name: str) -> dict:
-    """Retrieve information about a specific Tibia creature or monster from the creature library, including hit points, experience, loot, and other stats. Use this when the user asks about a monster or creature in Tibia."""
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{BASE_URL}/creature/{creature_name}",
-            timeout=30.0
-        )
-        response.raise_for_status()
-        return response.json()
+async def get_api_info() -> dict:
+    """Retrieve metadata and health information about the TibiaData API itself, including version, build details, and readiness status. Use this to check if the API is operational or to get version information."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        info_response = await client.get(f"{BASE_URL}/info")
+        info_response.raise_for_status()
+        info_data = info_response.json()
 
+        try:
+            health_response = await client.get("https://api.tibiadata.com/healthz")
+            health_data = {"healthz": health_response.text, "healthz_status": health_response.status_code}
+        except Exception as e:
+            health_data = {"healthz_error": str(e)}
 
-@mcp.tool()
-async def get_spell(spell_identifier: str) -> dict:
-    """Retrieve information about a specific Tibia spell, including its mana cost, level requirement, vocation restrictions, and effect. Use this when the user asks about spells or magic in Tibia."""
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{BASE_URL}/spell/{spell_identifier}",
-            timeout=30.0
-        )
-        response.raise_for_status()
-        return response.json()
+        return {**info_data, **health_data}
 
 
 
